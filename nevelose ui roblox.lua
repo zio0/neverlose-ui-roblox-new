@@ -4,21 +4,14 @@ local NeverloseVersion = "v1.1A."
 
 local TweenService = game:GetService("TweenService")
 local input = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 
-local player = Players.LocalPlayer
-local mouse = player:GetMouse()
-
--- Удаление старого GUI
 for i,v in next, game.CoreGui:GetChildren() do
     if v:IsA("ScreenGui") and v.Name == "Neverlose" then
         v:Destroy() 
     end
-    if v:IsA("ScreenGui") and v.Name == "NeverloseSettings" then
-        v:Destroy()
-    end
 end
+
+local themouse = game.Players.LocalPlayer:GetMouse()
 
 local function Notify(tt, tx)
     game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -28,16 +21,19 @@ local function Notify(tt, tx)
     })
 end
 
--- Drag система
 local function Dragify(frame, parent)
+
     parent = parent or frame
+
     local dragging = false
     local dragInput, mousePos, framePos
+
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             mousePos = input.Position
             framePos = parent.Position
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
@@ -45,11 +41,13 @@ local function Dragify(frame, parent)
             end)
         end
     end)
+
     frame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
     end)
+
     input.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - mousePos
@@ -96,61 +94,10 @@ local function clickEffect(options)
     end)
 end
 
--- Глобальные настройки UI
-local UISettings = {
-    AccentColor = Color3.fromRGB(2, 162, 243),
-    BackgroundTransparency = 0,
-    BlurAmount = 0,
-    ToggleKey = Enum.KeyCode.Insert,
-    MainGui = nil,
-    SettingsGui = nil,
-    BlurEffect = nil
-}
-
--- Функция обновления стилей
-local function UpdateUIStyle()
-    local gui = UISettings.MainGui
-    if not gui or not gui:FindFirstChild("Body") then return end
-    
-    local body = gui.Body
-    body.BackgroundTransparency = UISettings.BackgroundTransparency
-    
-    if UISettings.BlurAmount > 0 then
-        if not UISettings.BlurEffect then
-            UISettings.BlurEffect = Instance.new("BlurEffect")
-            UISettings.BlurEffect.Name = "UISettingsBlur"
-            UISettings.BlurEffect.Parent = gui
-        end
-        UISettings.BlurEffect.Size = UISettings.BlurAmount
-    else
-        if UISettings.BlurEffect then
-            UISettings.BlurEffect:Destroy()
-            UISettings.BlurEffect = nil
-        end
-    end
-    
-    for _, v in pairs(body:GetDescendants()) do
-        if v:IsA("TextButton") and v.Name == "toggleButton" then
-            if v.Parent and v.Parent:FindFirstChild("toggleFrame") then
-                if body.BackgroundTransparency < 0.5 then
-                    v.BackgroundColor3 = UISettings.AccentColor
-                end
-            end
-        end
-        if v:IsA("ImageLabel") and v.Name == "tabIcon" then
-            v.ImageColor3 = UISettings.AccentColor
-        end
-    end
-end
-
 function Library:Toggle(value)
-    local gui = UISettings.MainGui
-    if gui then
-        local newState = (value ~= nil) and value or not gui.Enabled
-        gui.Enabled = newState
-        return newState
-    end
-    return false
+    if game:GetServer("CoreGui"):FindFirstChild("Neverlose") == nil then return end
+    enabled = (type(value) == "boolean" and value) or game:GetServer("CoreGui"):FindFirstChild("Neverlose").Enabled
+    game:GetServer("CoreGui"):FindFirstChild("Neverlose").Enabled = not enabled
 end
 
 function Library:Window(options)
@@ -168,17 +115,12 @@ function Library:Window(options)
     local TopBar = Instance.new("Frame")
     local tbLine = Instance.new("Frame")
     local Title = Instance.new("TextLabel")
-    
-    -- ШЕСТЕРЕНКА НАСТРОЕК
-    local SettingsGear = Instance.new("ImageButton")
-    local gearCorner = Instance.new("UICorner")
 
     local allPages = Instance.new("Frame")
     local tabContainer = Instance.new("Frame")
 
     SG.Parent = game.CoreGui
     SG.Name = "Neverlose"
-    UISettings.MainGui = SG
 
     Body.Name = "Body"
     Body.Parent = SG
@@ -187,6 +129,7 @@ function Library:Window(options)
     Body.BorderSizePixel = 0
     Body.Position = UDim2.new(0.465730786, 0, 0.5, 0)
     Body.Size = UDim2.new(0, 658, 0, 516)
+    Body.Visible = true  -- <-- ДОБАВЛЕНО для видимости по умолчанию
 
     bodyCorner.CornerRadius = UDim.new(0, 4)
     bodyCorner.Name = "bodyCorner"
@@ -237,43 +180,6 @@ function Library:Window(options)
     Title.TextColor3 = Color3.fromRGB(234, 239, 245)
     Title.TextSize = 28.000
     Title.TextWrapped = true
-
-    -- Шестеренка - создаем и настраиваем
-    SettingsGear.Name = "SettingsGear"
-    SettingsGear.Parent = TopBar
-    SettingsGear.AnchorPoint = Vector2.new(1, 0.5)
-    SettingsGear.Position = UDim2.new(0.98, 0, 0.5, 0)
-    SettingsGear.Size = UDim2.new(0, 32, 0, 32)
-    SettingsGear.BackgroundColor3 = Color3.fromRGB(20, 28, 40)
-    SettingsGear.BackgroundTransparency = 0.3
-    SettingsGear.Image = "rbxassetid://6031098373"
-    SettingsGear.ImageColor3 = Color3.fromRGB(200, 210, 220)
-    SettingsGear.AutoButtonColor = false
-    SettingsGear.ZIndex = 10
-    
-    gearCorner.CornerRadius = UDim.new(1, 0)
-    gearCorner.Parent = SettingsGear
-    
-    -- Анимация при наведении
-    SettingsGear.MouseEnter:Connect(function()
-        TweenService:Create(SettingsGear, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-            BackgroundTransparency = 0,
-            ImageColor3 = Color3.fromRGB(255, 255, 255)
-        }):Play()
-        TweenService:Create(SettingsGear, TweenInfo.new(0.3, Enum.EasingStyle.Elastic), {
-            Rotation = 90
-        }):Play()
-    end)
-    
-    SettingsGear.MouseLeave:Connect(function()
-        TweenService:Create(SettingsGear, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-            BackgroundTransparency = 0.3,
-            ImageColor3 = Color3.fromRGB(200, 210, 220)
-        }):Play()
-        TweenService:Create(SettingsGear, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-            Rotation = 0
-        }):Play()
-    end)
 
     allPages.Name = "allPages"
     allPages.Parent = Body
@@ -363,7 +269,9 @@ function Library:Window(options)
                 for i,v in next, allPages:GetChildren() do
                     v.Visible = false
                 end
+
                 newPage.Visible = true
+
                 for i,v in next, SideBar:GetDescendants() do
                     if v:IsA("TextButton") then
                         TweenService:Create(v, TweenInfo.new(0.06, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
@@ -371,6 +279,7 @@ function Library:Window(options)
                         }):Play()
                     end
                 end
+
                 TweenService:Create(tabButton, TweenInfo.new(0.06, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                     BackgroundTransparency = 0
                 }):Play()
@@ -388,7 +297,7 @@ function Library:Window(options)
             tabIcon.Position = UDim2.new(0.0408859849, 0, 0.133333355, 0)
             tabIcon.Size = UDim2.new(0, 21, 0, 21)
             tabIcon.Image = options.icon
-            tabIcon.ImageColor3 = UISettings.AccentColor
+            tabIcon.ImageColor3 = Color3.fromRGB(43, 154, 198)
 
             newPage.Name = "newPage"
             newPage.Parent = allPages
@@ -514,7 +423,7 @@ function Library:Window(options)
                     if options.state then
                         toggleButton.Position = UDim2.new(0.74, 0, 0.5, 0)
                         toggleLabel.TextColor3 = Color3.fromRGB(234, 239, 246)
-                        toggleButton.BackgroundColor3 = UISettings.AccentColor
+                        toggleButton.BackgroundColor3 = Color3.fromRGB(2, 162, 243)
                         toggleFrame.BackgroundColor3 = Color3.fromRGB(2, 23, 49)
                     end
 
@@ -541,7 +450,7 @@ function Library:Window(options)
                             TextColor3 = State and Color3.fromRGB(234, 239, 246) or Color3.fromRGB(157, 171, 182)
                         }):Play()
                         TweenService:Create(toggleButton, TweenInfo.new(0.06, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {
-                            BackgroundColor3 = State and UISettings.AccentColor or Color3.fromRGB(77, 77, 77)
+                            BackgroundColor3 = State and Color3.fromRGB(2, 162, 243) or Color3.fromRGB(77, 77, 77)
                         }):Play()
                         TweenService:Create(toggleFrame, TweenInfo.new(0.06, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {
                             BackgroundColor3 = State and Color3.fromRGB(2, 23, 49) or Color3.fromRGB(4, 4, 11)
@@ -667,7 +576,7 @@ function Library:Window(options)
                     sliderBall.Name = "sliderBall"
                     sliderBall.Parent = sliderFrame
                     sliderBall.AnchorPoint = Vector2.new(0.5, 0.5)
-                    sliderBall.BackgroundColor3 = UISettings.AccentColor
+                    sliderBall.BackgroundColor3 = Color3.fromRGB(67, 136, 231)
                     sliderBall.BorderSizePixel = 0
                     sliderBall.Position = UDim2.new(0, 0, 0.5, 0)
                     sliderBall.Size = UDim2.new(0, 14, 0, 14)
@@ -1097,6 +1006,7 @@ function Library:Window(options)
                         local r = color[1];
                         local g = color[2];
                         local b = color[3];
+
                         local c = fromHSV(r, g, b);
                         colorHex.Text = tostring(to_hex(c))
                     end
@@ -1116,6 +1026,7 @@ function Library:Window(options)
                         DarknessCircle.BackgroundColor3 = realcolor
                         DarknessCircle.Position = UDim2.new(0,0,y,-cy)
                         options.callback(realcolor)
+
                         update();
                     end
                     local function UpdateRing(iX,iY)
@@ -1261,7 +1172,6 @@ function Library:Window(options)
                             }):Play()
                             keybindLabel.Text = short[inputbegan.KeyCode.Name] or inputbegan.KeyCode.Name
                             oldKey = inputbegan.KeyCode.Name
-                            options.callback(inputbegan.KeyCode.Name)
                         else
                             TweenService:Create(keybindButton, TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                                 TextColor3 = Color3.fromRGB(157, 171, 182)
@@ -1307,299 +1217,26 @@ function Library:Window(options)
     return tabsections
 end
 
--- ========== МАЛЕНЬКОЕ ОКНО НАСТРОЕК ==========
-local function CreateSettingsWindow()
-    local SettingsGui = Instance.new("ScreenGui")
-    SettingsGui.Name = "NeverloseSettings"
-    SettingsGui.Parent = game.CoreGui
-    SettingsGui.Enabled = false
-    UISettings.SettingsGui = SettingsGui
-    
-    local MainFrame = Instance.new("Frame")
-    local MainCorner = Instance.new("UICorner")
-    local TopBar = Instance.new("Frame")
-    local TopCorner = Instance.new("UICorner")
-    local Title = Instance.new("TextLabel")
-    local CloseBtn = Instance.new("TextButton")
-    local ContentFrame = Instance.new("Frame")
-    local ContentCorner = Instance.new("UICorner")
-    local UIList = Instance.new("UIListLayout")
-    
-    MainFrame.Parent = SettingsGui
-    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    MainFrame.Size = UDim2.new(0, 320, 0, 280)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(9, 8, 13)
-    MainFrame.BorderSizePixel = 0
-    
-    MainCorner.CornerRadius = UDim.new(0, 6)
-    MainCorner.Parent = MainFrame
-    
-    -- Верхняя панель для перетаскивания
-    TopBar.Parent = MainFrame
-    TopBar.Size = UDim2.new(1, 0, 0, 40)
-    TopBar.BackgroundColor3 = Color3.fromRGB(13, 57, 84)
-    TopBar.BorderSizePixel = 0
-    
-    TopCorner.CornerRadius = UDim.new(0, 6)
-    TopCorner.Parent = TopBar
-    
-    Title.Parent = TopBar
-    Title.Size = UDim2.new(1, -40, 1, 0)
-    Title.Position = UDim2.new(0, 10, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = "⚙ UI Settings"
-    Title.TextColor3 = Color3.fromRGB(234, 239, 245)
-    Title.TextSize = 16
-    Title.Font = Enum.Font.GothamSemibold
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    
-    CloseBtn.Parent = TopBar
-    CloseBtn.AnchorPoint = Vector2.new(1, 0.5)
-    CloseBtn.Position = UDim2.new(1, -10, 0.5, 0)
-    CloseBtn.Size = UDim2.new(0, 24, 0, 24)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-    CloseBtn.BorderSizePixel = 0
-    CloseBtn.Text = "✕"
-    CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    CloseBtn.TextSize = 14
-    CloseBtn.Font = Enum.Font.GothamBold
-    CloseBtn.AutoButtonColor = false
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(1, 0)
-    closeCorner.Parent = CloseBtn
-    
-    CloseBtn.MouseButton1Click:Connect(function()
-        SettingsGui.Enabled = false
-    end)
-    
-    CloseBtn.MouseEnter:Connect(function()
-        CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    end)
-    CloseBtn.MouseLeave:Connect(function()
-        CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-    end)
-    
-    ContentFrame.Parent = MainFrame
-    ContentFrame.Position = UDim2.new(0, 10, 0, 50)
-    ContentFrame.Size = UDim2.new(1, -20, 1, -60)
-    ContentFrame.BackgroundColor3 = Color3.fromRGB(0, 15, 30)
-    ContentFrame.BorderSizePixel = 0
-    
-    ContentCorner.CornerRadius = UDim.new(0, 4)
-    ContentCorner.Parent = ContentFrame
-    
-    UIList.Parent = ContentFrame
-    UIList.Padding = UDim.new(0, 8)
-    UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    
-    -- Drag функционал для окна настроек
-    local dragging = false
-    local dragStart, startPos
-    
-    TopBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
-        end
-    end)
-    
-    TopBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    -- Функция создания элементов в маленьком окне
-    local function CreateSlider(name, min, max, value, callback)
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, -20, 0, 50)
-        frame.BackgroundTransparency = 1
-        frame.Parent = ContentFrame
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 0, 20)
-        label.BackgroundTransparency = 1
-        label.Text = name
-        label.TextColor3 = Color3.fromRGB(157, 171, 182)
-        label.TextSize = 12
-        label.Font = Enum.Font.Gotham
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = frame
-        
-        local valueLabel = Instance.new("TextLabel")
-        valueLabel.Size = UDim2.new(0, 40, 0, 20)
-        valueLabel.Position = UDim2.new(1, -40, 0, 0)
-        valueLabel.BackgroundTransparency = 1
-        valueLabel.Text = tostring(value)
-        valueLabel.TextColor3 = Color3.fromRGB(234, 239, 245)
-        valueLabel.TextSize = 12
-        valueLabel.Font = Enum.Font.Gotham
-        valueLabel.TextXAlignment = Enum.TextXAlignment.Right        valueLabel.Parent = frame
-        
-        local sliderFrame = Instance.new("Frame")
-        sliderFrame.Size = UDim2.new(1, 0, 0, 4)
-        sliderFrame.Position = UDim2.new(0, 0, 0, 25)
-        sliderFrame.BackgroundColor3 = Color3.fromRGB(29, 87, 118)
-        sliderFrame.BorderSizePixel = 0
-        sliderFrame.Parent = frame
-        
-        local fill = Instance.new("Frame")
-        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-        fill.BackgroundColor3 = UISettings.AccentColor
-        fill.BorderSizePixel = 0
-        fill.Parent = sliderFrame
-        
-        local knob = Instance.new("TextButton")
-        knob.Size = UDim2.new(0, 12, 0, 12)
-        knob.Position = UDim2.new((value - min) / (max - min), -6, 0.5, -6)
-        knob.BackgroundColor3 = UISettings.AccentColor
-        knob.BorderSizePixel = 0
-        knob.Text = ""
-        knob.Parent = sliderFrame
-        
-        local knobCorner = Instance.new("UICorner")
-        knobCorner.CornerRadius = UDim.new(1, 0)
-        knobCorner.Parent = knob
-        
-        local draggingKnob = false
-        knob.MouseButton1Down:Connect(function()
-            draggingKnob = true
-        end)
-        
-        game:GetService("UserInputService").InputEnded:Connect(function()
-            draggingKnob = false
-        end)
-        
-        game:GetService("UserInputService").InputChanged:Connect(function(input)
-            if draggingKnob and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = input.Position.X
-                local framePos = sliderFrame.AbsolutePosition.X
-                local frameWidth = sliderFrame.AbsoluteSize.X
-                local percent = math.clamp((mousePos - framePos) / frameWidth, 0, 1)
-                local newValue = min + (max - min) * percent
-                if type(value) == "number" then
-                    newValue = math.floor(newValue * 100) / 100
-                end
-                value = newValue
-                valueLabel.Text = tostring(value)
-                fill.Size = UDim2.new(percent, 0, 1, 0)
-                knob.Position = UDim2.new(percent, -6, 0.5, -6)
-                callback(value)
-            end
-        end)
-        
-        return frame
-    end
-    
-    local function CreateColorpicker(name, color, callback)
-        local frame = Instance.new("Frame")
-        frame.Size = UDim2.new(1, -20, 0, 50)
-        frame.BackgroundTransparency = 1
-        frame.Parent = ContentFrame
-        
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -50, 0, 25)
-        label.BackgroundTransparency = 1
-        label.Text = name
-        label.TextColor3 = Color3.fromRGB(157, 171, 182)
-        label.TextSize = 12
-        label.Font = Enum.Font.Gotham
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = frame
-        
-        local colorBtn = Instance.new("TextButton")
-        colorBtn.Size = UDim2.new(0, 40, 0, 25)
-        colorBtn.Position = UDim2.new(1, -40, 0, 0)
-        colorBtn.BackgroundColor3 = color
-        colorBtn.BorderSizePixel = 0
-        colorBtn.Text = ""
-        colorBtn.Parent = frame
-        
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 4)
-        btnCorner.Parent = colorBtn
-        
-        -- Простой цветопикер: рандомный цвет при нажатии, но можно расширить
-        colorBtn.MouseButton1Click:Connect(function()
-            -- Для демонстрации - генерируем случайный цвет
-            local r = math.random(0, 255) / 255
-            local g = math.random(0, 255) / 255
-            local b = math.random(0, 255) / 255
-            local newColor = Color3.fromRGB(r * 255, g * 255, b * 255)
-            colorBtn.BackgroundColor3 = newColor
-            callback(newColor)
-        end)
-        
-        return frame
-    end
-    
-    -- Создание элементов
-    CreateSlider("Background Transparency", 0, 1, UISettings.BackgroundTransparency, function(v)
-        UISettings.BackgroundTransparency = v
-        UpdateUIStyle()
-    end)
-    
-    CreateSlider("Blur Amount", 0, 24, UISettings.BlurAmount, function(v)
-        UISettings.BlurAmount = math.floor(v)
-        UpdateUIStyle()
-    end)
-    
-    CreateColorpicker("Accent Color", UISettings.AccentColor, function(c)
-        UISettings.AccentColor = c
-        UpdateUIStyle()
-    end)
-    
-    return SettingsGui
-end
+-- ========== УПРАВЛЕНИЕ ВИДИМОСТЬЮ ПО RIGHT SHIFT (ДОБАВЛЕНО) ==========
+local UserInputService = game:GetService("UserInputService")
 
--- ========== ОСНОВНОЙ ЗАПУСК ==========
--- Создаем главное окно
-local MainWindow = Library:Window({text = "NEVERLOSE"})
-
--- Создаем окно настроек
-local SettingsWindow = CreateSettingsWindow()
-
--- Настройка шестеренки (открытие маленького окна)
-local function SetupGear()
-    local gui = UISettings.MainGui
-    if not gui then 
+coroutine.wrap(function()
+    while not game.CoreGui:FindFirstChild("Neverlose") do
         wait(0.1)
-        gui = UISettings.MainGui
     end
-    if not gui then return end
-    
-    local gear = gui:FindFirstChild("Body") and gui.Body:FindFirstChild("TopBar") and gui.Body.TopBar:FindFirstChild("SettingsGear")
-    if gear then
-        gear.MouseButton1Click:Connect(function()
-            if SettingsWindow then
-                SettingsWindow.Enabled = not SettingsWindow.Enabled
+    local gui = game.CoreGui.Neverlose
+    local body = gui:FindFirstChild("Body")
+    if body then
+        body.Visible = true
+        
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            if input.KeyCode == Enum.KeyCode.RightShift then
+                body.Visible = not body.Visible
             end
         end)
     end
-end
-
--- Глобальный хоткей для основного UI
-input.InputBegan:Connect(function(key, gameProcessed)
-    if gameProcessed then return end
-    if key.KeyCode == UISettings.ToggleKey then
-        if UISettings.MainGui then
-            UISettings.MainGui.Enabled = not UISettings.MainGui.Enabled
-        end
-    end
-end)
-
--- Применить настройки и настроить шестеренку
-UpdateUIStyle()
-SetupGear()
+end)()
+-- =====================================================================
 
 return Library
