@@ -1236,7 +1236,7 @@ coroutine.wrap(function()
         
         UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if gameProcessed then return end
-            if input.KeyCode == Enum.KeyCode.RightShift then
+            if input.KeyCode == Enum.KeyCode.End then
                 body.Visible = not body.Visible
                 -- Отладка: выводим в консоль при нажатии
                 print("[Neverlose] Right Shift нажат, видимость:", body.Visible)
