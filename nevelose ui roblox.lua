@@ -129,7 +129,7 @@ function Library:Window(options)
     Body.BorderSizePixel = 0
     Body.Position = UDim2.new(0.465730786, 0, 0.5, 0)
     Body.Size = UDim2.new(0, 658, 0, 516)
-    Body.Visible = true  -- <-- ДОБАВЛЕНО для видимости по умолчанию
+    Body.Visible = true
 
     bodyCorner.CornerRadius = UDim.new(0, 4)
     bodyCorner.Name = "bodyCorner"
@@ -1217,26 +1217,35 @@ function Library:Window(options)
     return tabsections
 end
 
--- ========== УПРАВЛЕНИЕ ВИДИМОСТЬЮ ПО RIGHT SHIFT (ДОБАВЛЕНО) ==========
+-- ========== БИНД НА RIGHT SHIFT (РАБОЧАЯ ВЕРСИЯ) ==========
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game.CoreGui
 
 coroutine.wrap(function()
-    while not game.CoreGui:FindFirstChild("Neverlose") do
+    -- Ждем появления GUI
+    while not CoreGui:FindFirstChild("Neverlose") do
         wait(0.1)
     end
-    local gui = game.CoreGui.Neverlose
+    
+    local gui = CoreGui.Neverlose
     local body = gui:FindFirstChild("Body")
+    
     if body then
         body.Visible = true
+        print("[Neverlose] Бинд на Right Shift активирован")
         
         UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if gameProcessed then return end
             if input.KeyCode == Enum.KeyCode.RightShift then
                 body.Visible = not body.Visible
+                -- Отладка: выводим в консоль при нажатии
+                print("[Neverlose] Right Shift нажат, видимость:", body.Visible)
             end
         end)
+    else
+        warn("[Neverlose] Body не найден!")
     end
 end)()
--- =====================================================================
+-- ========================================================
 
 return Library
