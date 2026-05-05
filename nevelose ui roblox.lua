@@ -15,6 +15,9 @@ for i,v in next, game.CoreGui:GetChildren() do
     if v:IsA("ScreenGui") and v.Name == "Neverlose" then
         v:Destroy() 
     end
+    if v:IsA("ScreenGui") and v.Name == "NeverloseSettings" then
+        v:Destroy()
+    end
 end
 
 local function Notify(tt, tx)
@@ -104,7 +107,7 @@ local UISettings = {
     BlurEffect = nil
 }
 
--- Функция обновления стилей основного UI
+-- Функция обновления стилей
 local function UpdateUIStyle()
     local gui = UISettings.MainGui
     if not gui or not gui:FindFirstChild("Body") then return end
@@ -235,21 +238,23 @@ function Library:Window(options)
     Title.TextSize = 28.000
     Title.TextWrapped = true
 
-    -- Шестеренка
+    -- Шестеренка - создаем и настраиваем
     SettingsGear.Name = "SettingsGear"
     SettingsGear.Parent = TopBar
     SettingsGear.AnchorPoint = Vector2.new(1, 0.5)
     SettingsGear.Position = UDim2.new(0.98, 0, 0.5, 0)
-    SettingsGear.Size = UDim2.new(0, 28, 0, 28)
+    SettingsGear.Size = UDim2.new(0, 32, 0, 32)
     SettingsGear.BackgroundColor3 = Color3.fromRGB(20, 28, 40)
     SettingsGear.BackgroundTransparency = 0.3
     SettingsGear.Image = "rbxassetid://6031098373"
     SettingsGear.ImageColor3 = Color3.fromRGB(200, 210, 220)
     SettingsGear.AutoButtonColor = false
+    SettingsGear.ZIndex = 10
     
     gearCorner.CornerRadius = UDim.new(1, 0)
     gearCorner.Parent = SettingsGear
     
+    -- Анимация при наведении
     SettingsGear.MouseEnter:Connect(function()
         TweenService:Create(SettingsGear, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
             BackgroundTransparency = 0,
@@ -1407,7 +1412,7 @@ local function CreateSettingsWindow()
         end
     end)
     
-    input.InputChanged:Connect(function(input)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
@@ -1439,8 +1444,7 @@ local function CreateSettingsWindow()
         valueLabel.TextColor3 = Color3.fromRGB(234, 239, 245)
         valueLabel.TextSize = 12
         valueLabel.Font = Enum.Font.Gotham
-        valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-        valueLabel.Parent = frame
+        valueLabel.TextXAlignment = Enum.TextXAlignment.Right        valueLabel.Parent = frame
         
         local sliderFrame = Instance.new("Frame")
         sliderFrame.Size = UDim2.new(1, 0, 0, 4)
@@ -1472,11 +1476,11 @@ local function CreateSettingsWindow()
             draggingKnob = true
         end)
         
-        input.InputEnded:Connect(function()
+        game:GetService("UserInputService").InputEnded:Connect(function()
             draggingKnob = false
         end)
         
-        input.InputChanged:Connect(function(input)
+        game:GetService("UserInputService").InputChanged:Connect(function(input)
             if draggingKnob and input.UserInputType == Enum.UserInputType.MouseMovement then
                 local mousePos = input.Position.X
                 local framePos = sliderFrame.AbsolutePosition.X
@@ -1525,8 +1529,9 @@ local function CreateSettingsWindow()
         btnCorner.CornerRadius = UDim.new(0, 4)
         btnCorner.Parent = colorBtn
         
+        -- Простой цветопикер: рандомный цвет при нажатии, но можно расширить
         colorBtn.MouseButton1Click:Connect(function()
-            -- Простой выбор цвета через попап
+            -- Для демонстрации - генерируем случайный цвет
             local r = math.random(0, 255) / 255
             local g = math.random(0, 255) / 255
             local b = math.random(0, 255) / 255
@@ -1557,14 +1562,23 @@ local function CreateSettingsWindow()
     return SettingsGui
 end
 
+-- ========== ОСНОВНОЙ ЗАПУСК ==========
+-- Создаем главное окно
+local MainWindow = Library:Window({text = "NEVERLOSE"})
+
 -- Создаем окно настроек
 local SettingsWindow = CreateSettingsWindow()
 
 -- Настройка шестеренки (открытие маленького окна)
 local function SetupGear()
     local gui = UISettings.MainGui
+    if not gui then 
+        wait(0.1)
+        gui = UISettings.MainGui
+    end
     if not gui then return end
-    local gear = gui:FindFirstChild("Body"):FindFirstChild("TopBar"):FindFirstChild("SettingsGear")
+    
+    local gear = gui:FindFirstChild("Body") and gui.Body:FindFirstChild("TopBar") and gui.Body.TopBar:FindFirstChild("SettingsGear")
     if gear then
         gear.MouseButton1Click:Connect(function()
             if SettingsWindow then
